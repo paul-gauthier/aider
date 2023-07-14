@@ -7,6 +7,8 @@ from io import StringIO
 from pathlib import Path
 from unittest import TestCase
 
+import git
+
 from aider import models
 from aider.coders import Coder
 from aider.commands import Commands
@@ -22,7 +24,11 @@ class TestCommands(TestCase):
 
     def tearDown(self):
         os.chdir(self.original_cwd)
-        shutil.rmtree(self.tempdir)
+        try:
+            shutil.rmtree(self.tempdir)
+        except OSError:
+            # Windows won't let us clean up sometimes
+            pass
 
     def test_cmd_add(self):
         # Initialize the Commands and InputOutput objects
@@ -138,6 +144,44 @@ class TestCommands(TestCase):
 
         self.assertIn(str(Path("test1.py").resolve()), coder.abs_fnames)
         self.assertNotIn(str(Path("test2.py").resolve()), coder.abs_fnames)
+
+    def test_cmd_add_from_subdir(self):
+        repo = git.Repo.init()
+        repo.config_writer().set_value("user", "name", "Test User").release()
+        repo.config_writer().set_value("user", "email", "testuser@example.com").release()
+
+        # Create three empty files and add them to the git repository
+        filenames = ["one.py", Path("subdir") / "two.py", Path("anotherdir") / "three.py"]
+        for filename in filenames:
+            file_path = Path(filename)
+            file_path.parent.mkdir(parents=True, exist_ok=True)
+            file_path.touch()
+            repo.git.add(str(file_path))
+        repo.git.commit("-m", "added")
+
+        filenames = [str(Path(fn).resolve()) for fn in filenames]
+
+        ###
+
+        os.chdir("subdir")
+
+        io = InputOutput(pretty=False, yes=True)
+        coder = Coder.create(models.GPT35, None, io)
+        commands = Commands(io, coder)
+
+        # this should get added
+        commands.cmd_add(str(Path("anotherdir") / "three.py"))
+
+        # this should add two.py
+        commands.cmd_add("*.py")
+
+        self.assertNotIn(filenames[0], coder.abs_fnames)
+        self.assertIn(filenames[1], coder.abs_fnames)
+        self.assertIn(filenames[2], coder.abs_fnames)
+
+        del commands
+        del coder
+        del io
 
     def test_cmd_add_bad_encoding(self):
         # Initialize the Commands and InputOutput objects
