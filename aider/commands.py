@@ -82,7 +82,10 @@ class Commands:
         rest_inp = inp[len(words[0]) :]
 
         all_commands = self.get_commands()
-        matching_commands = [cmd for cmd in all_commands if cmd.startswith(first_word)]
+        # Prioritize exact matches over partial matches
+        exact_matches = [cmd for cmd in all_commands if cmd == first_word]
+        partial_matches = [cmd for cmd in all_commands if cmd.startswith(first_word) and cmd != first_word]
+        matching_commands = exact_matches if exact_matches else partial_matches
         return matching_commands, first_word, rest_inp
 
     def run(self, inp):
@@ -172,18 +175,20 @@ class Commands:
                 tokens = self.coder.main_model.token_count(content)
             res.append((tokens, f"{relative_fname}", "use /drop to drop from chat"))
 
+        current_model_name = self.coder.main_model.name
+        self.io.tool_output(f"Current model: {current_model_name} ({self.coder.edit_format})")
         self.io.tool_output("Approximate context window usage, in tokens:")
         self.io.tool_output()
 
         width = 8
-        cost_width = 7
+        cost_width = 10
 
         def fmt(v):
             return format(int(v), ",").rjust(width)
 
         col_width = max(len(row[1]) for row in res)
 
-        cost_pad = " " * cost_width
+        cost_pad = " " * (cost_width - 1)
         total = 0
         total_cost = 0.0
         for tk, msg, tip in res:
@@ -191,7 +196,7 @@ class Commands:
             cost = tk * (self.coder.main_model.prompt_price / 1000)
             total_cost += cost
             msg = msg.ljust(col_width)
-            self.io.tool_output(f"${cost:5.2f} {fmt(tk)} {msg} {tip}")
+            self.io.tool_output(f"${cost:5.4f} {fmt(tk)} {msg} {tip}")
 
         self.io.tool_output("=" * (width + cost_width + 1))
         self.io.tool_output(f"${total_cost:5.2f} {fmt(total)} tokens total")
@@ -522,8 +527,60 @@ class Commands:
         for file in other_files:
             self.io.tool_output(f"  {file}")
 
+    def cmd_models(self, args):
+        "Show available models and their costs"
+        current_model_name = self.coder.main_model.name
+        models = self.coder.main_model.available_models()
+        self.io.tool_output(f"Current model: {current_model_name}")
+        self.io.tool_output("Available models:")
+        # Calculate column widths
+        alias_width = max(len(model_info['Alias']) for model_info in models.values()) + 2
+        model_width = max(len(model_name) for model_name in models.keys()) + 2
+        input_cost_width = max(len(f"{model_info['Input_cur']}{model_info['Input_cost']}{model_info['Input_desc']}") for model_info in models.values()) + 2
+        output_cost_width = max(len(f"{model_info['Output_cur']}{model_info['Output_cost']}{model_info['Output_desc']}") for model_info in models.values()) + 2
+        description_width = max(len(model_name) for model_name in models.keys()) + 2
+
+        # Create a formatted table header
+        header = f"{'Alias'.ljust(alias_width)}| {'Model'.ljust(model_width)}| {'Input Cost'.ljust(input_cost_width)}| {'Output Cost'.ljust(output_cost_width)}| {'Description'.ljust(description_width)}"
+        self.io.tool_output(header)
+        self.io.tool_output("-" * len(header))
+
+        # Output each row in the table
+        for model_name, model_info in models.items():
+            alias = model_info['Alias'].ljust(alias_width)
+            input_cost = (f"{model_info['Input_cur']}{model_info['Input_cost']}{model_info['Input_desc']}").ljust(input_cost_width)
+            output_cost = (f"{model_info['Output_cur']}{model_info['Output_cost']}{model_info['Output_desc']}").ljust(output_cost_width)
+            description = model_name.ljust(description_width)  # Assuming the model name itself is the description
+            self.io.tool_output(f"{alias}| {model_name.ljust(model_width)}| {input_cost}| {output_cost}| {description}")
+
+    def cmd_model(self, args):
+        "Switch to a different model"
+        alias = args.strip()
+        if not alias:
+            # Toggle between models 3 and 4 if no alias is provided
+            current_model_name = self.coder.main_model.name
+            new_model_name = 'gpt-3.5-turbo-1106' if current_model_name == 'gpt-4-1106-preview' else 'gpt-4-1106-preview'
+            self.switch_model(new_model_name)
+            return
+
+        models = self.coder.main_model.available_models()
+        for model_name, model_info in models.items():
+            if model_info['Alias'] == alias or model_info['Model'] == alias:
+                self.switch_model(model_name)
+                return
+        self.io.tool_error(f"Model with alias '{alias}' not found.")
+
+    def switch_model(self, model_name):
+        # Assuming there is a method in the coder to switch models
+        self.coder = self.coder.clone_with_new_model(model_name)
+
+    # Alias for cmd_model
+    def cmd_m(self, args):
+        "Switch to a different model"
+        return self.cmd_model(args)
+
     def cmd_help(self, args):
-        "Show help about all commands"
+        "Shows this /help with all available commands"
         commands = sorted(self.get_commands())
         for cmd in commands:
             cmd_method_name = f"cmd_{cmd[1:]}"

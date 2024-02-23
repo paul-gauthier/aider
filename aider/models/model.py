@@ -53,6 +53,9 @@ class Model:
 
         return len(self.tokenizer.encode(msgs))
 
+    def available_models(self):
+        raise NotImplementedError
+
     def token_count_for_image(self, fname):
         """
         Calculate the token cost for an image assuming high detail.

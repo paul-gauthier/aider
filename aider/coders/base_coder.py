@@ -15,6 +15,7 @@ from jsonschema import Draft7Validator
 from rich.console import Console, Text
 from rich.markdown import Markdown
 
+from aider.models.model import Model
 from aider import models, prompts, utils
 from aider.commands import Commands
 from aider.history import ChatSummary
@@ -363,6 +364,40 @@ class Coder:
             ]
 
         return files_messages
+
+    def clone_with_new_model(self, model_name):
+        # Note that edit_format is skipped when switching models
+        new_coder = Coder.create(
+                main_model = models.Model.create(model_name, self.client),
+                io = self.io,
+                client = self.client,
+                pretty = self.pretty,
+                show_diffs=self.show_diffs,
+                auto_commits=self.auto_commits,
+                dirty_commits=self.dirty_commits,
+                dry_run=self.dry_run,
+                verbose=self.verbose,
+                assistant_output_color=self.assistant_output_color,
+                code_theme=self.code_theme,
+                stream=self.stream,
+                )
+        new_coder.abs_fnames = self.abs_fnames
+        new_coder.repo = self.repo
+        new_coder.root = self.root
+        new_coder.cur_messages = self.cur_messages
+        #TODO figure out repo_map, use_git, voice_language, aider_ignore_file
+        return new_coder
+        new_model = Model.create(name=model_name, client=self.client)
+        if new_model:
+            self.main_model = new_model
+            # Update any other necessary state to reflect the model change
+            # This might include resetting the tokenizer, updating pricing info, etc.
+            # Add any additional state updates as needed.
+            self.tokenizer = new_model.tokenizer
+            # Log the model switch
+            self.io.tool_output(f"Switched to model: {model_name}")
+        else:
+            raise ValueError(f"Model with name '{model_name}' could not be created.")
 
     def get_images_message(self):
         if not utils.is_gpt4_with_openai_base_url(self.main_model.name, self.client):
