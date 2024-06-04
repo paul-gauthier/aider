@@ -2,6 +2,7 @@
 
 import io
 import time
+from typing import Optional
 
 from rich.console import Console
 from rich.live import Live
@@ -19,10 +20,10 @@ Lorem Ipsum is simply dummy text of the printing and typesetting industry. Lorem
 
 ## Sub header
 
-- List 1
-- List 2
-- List me
-- List you
+- list 1
+- list 2
+- list me
+- list you
 
 
 
@@ -41,7 +42,7 @@ The end.
 
 
 class MarkdownStream:
-    live = None
+    live: Optional[Live] = None
     when = 0
     min_delay = 0.050
     live_window = 6
