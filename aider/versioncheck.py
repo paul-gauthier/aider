@@ -1,3 +1,4 @@
+import os
 import sys
 import time
 from pathlib import Path
@@ -10,12 +11,16 @@ from aider.dump import dump  # noqa: F401
 
 
 def check_version(io, just_check=False):
+    # Skip version check in test environments
+    if os.environ.get("AIDER_SKIP_VERSION_CHECK"):
+        return False
+
     fname = Path.home() / ".aider" / "caches" / "versioncheck"
     if not just_check and fname.exists():
         day = 60 * 60 * 24
         since = time.time() - fname.stat().st_mtime
         if since < day:
-            return
+            return False
 
     # To keep startup fast, avoid importing this unless needed
     import requests
