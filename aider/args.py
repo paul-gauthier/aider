@@ -520,6 +520,12 @@ def get_parser(default_config_files, git_root):
         ),
     )
     group.add_argument(
+        "--commandio",
+        action="store_true",
+        help="Run aider using commands via stdin/stdout",
+        default=False,
+    )
+    group.add_argument(
         "--gui",
         "--browser",
         action="store_true",
