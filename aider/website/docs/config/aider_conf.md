@@ -83,6 +83,9 @@ cog.outl("```")
 ## Use gpt-3.5-turbo model for the main chat
 #35turbo: false
 
+## Specify the prompt variant to use (default: default)
+#prompt-variant: default
+
 #################
 # Model Settings:
 
