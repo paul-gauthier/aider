@@ -413,15 +413,6 @@ MODEL_SETTINGS = [
     ),
     # Gemini
     ModelSettings(
-        "gemini/gemini-1.5-pro-002",
-        "diff",
-        use_repo_map=True,
-    ),
-    ModelSettings(
-        "gemini/gemini-1.5-flash-002",
-        "whole",
-    ),
-    ModelSettings(
         "gemini/gemini-1.5-pro",
         "diff-fenced",
         use_repo_map=True,
@@ -955,7 +946,7 @@ def sanity_check_model(io, model):
         io.tool_warning(f"Warning: {model} expects these environment variables")
         for key in model.missing_keys:
             value = os.environ.get(key, "")
-            status = "Set" if value else "Not set"
+            status = "✓ Set" if value else "✗ Not set"
             io.tool_output(f"- {key}: {status}")
 
         if platform.system() == "Windows" or True:
