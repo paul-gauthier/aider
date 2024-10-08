@@ -1,10 +1,7 @@
 #!/bin/bash
 
-cp -a "$PWD"/../refactor-benchmark/refactor-benchmark "$PWD"/tmp.benchmarks
-
 docker run \
        -it --rm \
-       -v `pwd`:/aider \
        -v `pwd`:/aider \
        -v `pwd`/tmp.benchmarks/.:/benchmarks \
        -e OPENAI_API_KEY=$OPENAI_API_KEY \

@@ -27,7 +27,7 @@ beautifulsoup4==4.12.3
     # via -r requirements/requirements.in
 cedarscript-ast-parser==0.1.6
     # via cedarscript-editor
-cedarscript-editor==0.1.9
+cedarscript-editor==0.1.10
     # via -r requirements/requirements.in
 cedarscript-grammar==0.0.8
     # via cedarscript-ast-parser
@@ -185,7 +185,7 @@ requests==2.32.3
 rich==13.8.1
     # via -r requirements/requirements.in
 rope==1.13.0
-    # via -r requirements/requirements.in
+    # via cedarscript-editor
 rpds-py==0.20.0
     # via
     #   jsonschema
