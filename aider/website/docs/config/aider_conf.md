@@ -166,6 +166,14 @@ cog.outl("```")
 ## Specify the .env file to load (default: .env in git root)
 #env-file: .env
 
+## Add a JSON blob of extra parameters to pass to LiteLLM.  Handy for global setting overrides.
+#litellm-extra-params: >
+#   {
+#     "extra_headers": {
+#       "header_name": "header_value"
+#     }
+#   }
+
 #################
 # Cache Settings:
 

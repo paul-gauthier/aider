@@ -582,6 +582,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
         weak_model=args.weak_model,
         editor_model=args.editor_model,
         editor_edit_format=args.editor_edit_format,
+        litellm_extra_params=args.litellm_extra_params,
     )
 
     if args.verbose:
@@ -674,6 +675,7 @@ def main(argv=None, input=None, output=None, force_git_root=None, return_coder=F
             num_cache_warming_pings=args.cache_keepalive_pings,
             suggest_shell_commands=args.suggest_shell_commands,
             chat_language=args.chat_language,
+            litellm_extra_params=args.litellm_extra_params,
         )
     except ValueError as err:
         io.tool_error(str(err))

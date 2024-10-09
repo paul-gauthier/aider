@@ -186,6 +186,12 @@ def get_parser(default_config_files, git_root):
         help="Specify a file with context window and costs for unknown models",
     )
     group.add_argument(
+        "--litellm-extra-params",
+        metavar="LITELLM_EXTRA_PARAMS",
+        default=None,
+        help="Specify global litellm extra parameters as JSON string",
+    )
+    group.add_argument(
         "--verify-ssl",
         action=argparse.BooleanOptionalAction,
         default=True,

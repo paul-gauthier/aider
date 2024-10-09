@@ -7,7 +7,7 @@ import sys
 import time
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Optional
+from typing import Optional, Union
 
 import json5
 import yaml
@@ -649,11 +649,19 @@ def get_model_info(model):
 
 
 class Model(ModelSettings):
-    def __init__(self, model, weak_model=None, editor_model=None, editor_edit_format=None):
+    def __init__(self, model, weak_model=None, editor_model=None, editor_edit_format=None, litellm_extra_params: Union[str, dict] = None):
         self.name = model
         self.max_chat_history_tokens = 1024
         self.weak_model = None
         self.editor_model = None
+
+        if isinstance(litellm_extra_params, str):
+            try:
+                self.litellm_extra_params = json.loads(litellm_extra_params)
+            except json.JSONDecodeError as e:
+                raise ValueError(f"Failed to parse litellm_extra_params as JSON: {e}")
+        else:
+            self.litellm_extra_params = litellm_extra_params or {}
 
         self.info = self.get_model_info(model)
 
@@ -678,6 +686,11 @@ class Model(ModelSettings):
             self.editor_model_name = None
         else:
             self.get_editor_model(editor_model, editor_edit_format)
+
+        if self.extra_params:
+            self.extra_params = {**self.litellm_extra_params, **self.extra_params}
+        else:
+            self.extra_params = self.litellm_extra_params
 
     def get_model_info(self, model):
         return get_model_info(model)
