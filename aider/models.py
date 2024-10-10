@@ -7,7 +7,7 @@ import sys
 import time
 from dataclasses import dataclass, fields
 from pathlib import Path
-from typing import Optional, Union
+from typing import Optional
 
 import json5
 import yaml
