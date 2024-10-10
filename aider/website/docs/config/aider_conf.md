@@ -139,6 +139,9 @@ cog.outl("```")
 ## Specify a file with context window and costs for unknown models
 #model-metadata-file: .aider.model.metadata.json
 
+## Specify global litellm extra parameters as JSON string
+#litellm-extra-params: xxx
+
 ## Verify the SSL cert when connecting to models (default: True)
 #verify-ssl: true
 
@@ -165,14 +168,6 @@ cog.outl("```")
 
 ## Specify the .env file to load (default: .env in git root)
 #env-file: .env
-
-## Add a JSON blob of extra parameters to pass to LiteLLM.  Handy for global setting overrides.
-#litellm-extra-params: >
-#   {
-#     "extra_headers": {
-#       "header_name": "header_value"
-#     }
-#   }
 
 #################
 # Cache Settings:

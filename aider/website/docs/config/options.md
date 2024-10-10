@@ -31,7 +31,7 @@ usage: aider [-h] [--openai-api-key] [--anthropic-api-key] [--model]
              [--list-models] [--openai-api-base] [--openai-api-type]
              [--openai-api-version] [--openai-api-deployment-id]
              [--openai-organization-id] [--model-settings-file]
-             [--model-metadata-file]
+             [--model-metadata-file] [--litellm-extra-params]
              [--verify-ssl | --no-verify-ssl] [--edit-format]
              [--architect] [--weak-model] [--editor-model]
              [--editor-edit-format]
@@ -182,6 +182,10 @@ Environment variable: `AIDER_MODEL_SETTINGS_FILE`
 Specify a file with context window and costs for unknown models  
 Default: .aider.model.metadata.json  
 Environment variable: `AIDER_MODEL_METADATA_FILE`  
+
+### `--litellm-extra-params LITELLM_EXTRA_PARAMS`
+Specify global litellm extra parameters as JSON string  
+Environment variable: `AIDER_LITELLM_EXTRA_PARAMS`  
 
 ### `--verify-ssl`
 Verify the SSL cert when connecting to models (default: True)  
