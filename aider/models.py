@@ -649,19 +649,11 @@ def get_model_info(model):
 
 
 class Model(ModelSettings):
-    def __init__(self, model, weak_model=None, editor_model=None, editor_edit_format=None, litellm_extra_params: Union[str, dict] = None):
+    def __init__(self, model, weak_model=None, editor_model=None, editor_edit_format=None, litellm_extra_headers: str = None):
         self.name = model
         self.max_chat_history_tokens = 1024
         self.weak_model = None
         self.editor_model = None
-
-        if isinstance(litellm_extra_params, str):
-            try:
-                self.litellm_extra_params = json.loads(litellm_extra_params)
-            except json.JSONDecodeError as e:
-                raise ValueError(f"Failed to parse litellm_extra_params as JSON: {e}")
-        else:
-            self.litellm_extra_params = litellm_extra_params or {}
 
         self.info = self.get_model_info(model)
 
@@ -687,10 +679,30 @@ class Model(ModelSettings):
         else:
             self.get_editor_model(editor_model, editor_edit_format)
 
-        if self.extra_params:
-            self.extra_params = {**self.litellm_extra_params, **self.extra_params}
-        else:
-            self.extra_params = self.litellm_extra_params
+        # Call the new method to update headers
+        self.update_litellm_headers(litellm_extra_headers)
+
+    def update_litellm_headers(self, litellm_extra_headers: str):
+        extra_headers = {}
+        if litellm_extra_headers:
+            try:
+                headers = [header.strip() for header in litellm_extra_headers.split(';') if header.strip()]
+                for header in headers:
+                    key, value = header.split(':', 1)
+                    extra_headers[key.strip()] = value.strip()
+            except ValueError as e:
+                raise ValueError(f"Failed to parse litellm-extra-headers: {e}")
+
+        if extra_headers:
+            if self.extra_params:
+                self.extra_params = {**self.extra_params, "extra_headers": {**self.extra_params.get("extra_headers", {}), **extra_headers}}
+            else:
+                self.extra_params = {"extra_headers": extra_headers}
+
+            if self.weak_model and self.weak_model.extra_params:
+                self.weak_model.extra_params = {**self.extra_params, "extra_headers": {**self.extra_params.get("extra_headers", {}), **extra_headers}}
+            elif self.weak_model:
+                self.weak_model.extra_params = {"extra_headers": extra_headers}
 
     def get_model_info(self, model):
         return get_model_info(model)

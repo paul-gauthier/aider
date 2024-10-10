@@ -139,8 +139,8 @@ cog.outl("```")
 ## Specify a file with context window and costs for unknown models
 #model-metadata-file: .aider.model.metadata.json
 
-## Specify global litellm extra parameters as JSON string
-#litellm-extra-params: xxx
+## Specify extra headers for litellm as a semicolon-separated list, e.g., 'Header1:Value1;Header2:Value2'
+#litellm-extra-headers: xxx
 
 ## Verify the SSL cert when connecting to models (default: True)
 #verify-ssl: true

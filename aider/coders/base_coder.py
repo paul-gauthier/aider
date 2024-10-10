@@ -99,7 +99,6 @@ class Coder:
         io=None,
         from_coder=None,
         summarize_from_coder=True,
-        litellm_extra_params=None,
         **kwargs,
     ):
         import aider.coders as coders
@@ -150,7 +149,7 @@ class Coder:
 
         for coder in coders.__all__:
             if hasattr(coder, "edit_format") and coder.edit_format == edit_format:
-                res = coder(main_model, io, litellm_extra_params=litellm_extra_params, **kwargs)
+                res = coder(main_model, io, **kwargs)
                 res.original_kwargs = dict(kwargs)
                 return res
 
@@ -264,7 +263,6 @@ class Coder:
         num_cache_warming_pings=0,
         suggest_shell_commands=True,
         chat_language=None,
-        litellm_extra_params=None,
     ):
         self.chat_language = chat_language
         self.commit_before_message = []
