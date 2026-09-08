@@ -1016,6 +1016,7 @@ class Coder:
         try:
             self.summarized_done_messages = self.summarizer.summarize(self.summarizing_messages)
         except ValueError as err:
+            self.summarized_done_messages = self.summarizing_messages
             self.io.tool_warning(err.args[0])
 
         if self.verbose:

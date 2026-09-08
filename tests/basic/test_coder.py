@@ -22,6 +22,31 @@ class TestCoder(unittest.TestCase):
         self.webbrowser_patcher = patch("aider.io.webbrowser.open")
         self.mock_webbrowser = self.webbrowser_patcher.start()
 
+    def test_summarization_failure_preserves_history(self):
+        messages = [
+            dict(role="user", content="Keep the command-line interface compatible."),
+            dict(role="assistant", content="I will preserve the existing options."),
+        ]
+        summary = [dict(role="user", content="Preserve the command-line options.")]
+        summarizer = MagicMock()
+        summarizer.too_big.return_value = True
+        summarizer.summarize.side_effect = [ValueError("Summarization failed"), summary]
+        io = MagicMock()
+        coder = Coder.create(self.GPT35, "whole", io=io, use_git=False, summarizer=summarizer)
+        coder.done_messages = list(messages)
+
+        coder.summarize_start()
+        coder.summarize_end()
+
+        self.assertEqual(coder.done_messages, messages)
+        io.tool_warning.assert_called_once_with("Summarization failed")
+
+        coder.summarize_start()
+        coder.summarize_end()
+
+        self.assertEqual(coder.done_messages, summary)
+        self.assertIsNone(coder.summarizer_thread)
+
     def test_allowed_to_edit(self):
         with GitTemporaryDirectory():
             repo = git.Repo()
