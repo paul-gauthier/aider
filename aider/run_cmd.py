@@ -7,6 +7,42 @@ from io import BytesIO
 import pexpect
 import psutil
 
+# Model-provider credentials that child shells (/run, /test, lint, /git) do not need.
+# See https://github.com/Aider-AI/aider/issues/5658
+PROVIDER_ENV_KEYS = frozenset(
+    {
+        "OPENAI_API_KEY",
+        "ANTHROPIC_API_KEY",
+        "OPENROUTER_API_KEY",
+        "DEEPSEEK_API_KEY",
+        "GEMINI_API_KEY",
+        "GROQ_API_KEY",
+        "FIREWORKS_API_KEY",
+        "COHERE_API_KEY",
+        "TOGETHER_API_KEY",
+        "MISTRAL_API_KEY",
+        "AZURE_OPENAI_API_KEY",
+        "AWS_ACCESS_KEY_ID",
+        "AWS_SECRET_ACCESS_KEY",
+        "AWS_SESSION_TOKEN",
+    }
+)
+
+
+def child_process_environ(base=None, extra=None):
+    """Copy an environment with model-provider credentials removed.
+
+    Child commands launched for /run, /test, lint, and /git inherit the process
+    environment by default. Scrubbing provider credentials reduces accidental
+    leakage into repository-controlled scripts while leaving other vars intact.
+    """
+    env = dict(os.environ if base is None else base)
+    for key in PROVIDER_ENV_KEYS:
+        env.pop(key, None)
+    if extra:
+        env.update(extra)
+    return env
+
 
 def run_cmd(command, verbose=False, error_print=None, cwd=None):
     try:
@@ -70,6 +106,7 @@ def run_cmd_subprocess(command, verbose=False, cwd=None, encoding=sys.stdout.enc
             bufsize=0,  # Set bufsize to 0 for unbuffered output
             universal_newlines=True,
             cwd=cwd,
+            env=child_process_environ(),
         )
 
         output = []
@@ -106,6 +143,7 @@ def run_cmd_pexpect(command, verbose=False, cwd=None):
     try:
         # Use the SHELL environment variable, falling back to /bin/sh if not set
         shell = os.environ.get("SHELL", "/bin/sh")
+        child_env = child_process_environ()
         if verbose:
             print("With shell:", shell)
 
@@ -113,12 +151,14 @@ def run_cmd_pexpect(command, verbose=False, cwd=None):
             # Use the shell from SHELL environment variable
             if verbose:
                 print("Running pexpect.spawn with shell:", shell)
-            child = pexpect.spawn(shell, args=["-i", "-c", command], encoding="utf-8", cwd=cwd)
+            child = pexpect.spawn(
+                shell, args=["-i", "-c", command], encoding="utf-8", cwd=cwd, env=child_env
+            )
         else:
             # Fall back to spawning the command directly
             if verbose:
                 print("Running pexpect.spawn without shell.")
-            child = pexpect.spawn(command, encoding="utf-8", cwd=cwd)
+            child = pexpect.spawn(command, encoding="utf-8", cwd=cwd, env=child_env)
 
         # Transfer control to the user, capturing output
         child.interact(output_filter=output_callback)
