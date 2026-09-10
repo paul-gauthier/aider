@@ -341,6 +341,40 @@ class TestInputOutput(unittest.TestCase):
         self.assertEqual(mock_input.call_count, 2)
         self.assertNotIn(("Do you want to proceed?", None), io.never_prompts)
 
+    @patch("builtins.input", return_value="y")
+    def test_confirm_ask_falls_back_when_prompt_session_raises_permission_error(self, mock_input):
+        """prompt_toolkit can raise PermissionError on Windows socketpair (issue #5695)."""
+        io = InputOutput(pretty=False, fancy_input=False)
+        io.yes = None
+        session = MagicMock()
+        session.prompt.side_effect = PermissionError(
+            "[WinError 10013] An attempt was made to access a socket in a way forbidden by its"
+            " access permissions"
+        )
+        io.prompt_session = session
+
+        result = io.confirm_ask("Add these files to the chat?")
+
+        self.assertTrue(result)
+        session.prompt.assert_called_once()
+        mock_input.assert_called_once()
+        self.assertIsNone(io.prompt_session)
+
+    @patch("builtins.input", return_value="typed answer")
+    def test_prompt_ask_falls_back_when_prompt_session_raises_permission_error(self, mock_input):
+        io = InputOutput(pretty=False, fancy_input=False)
+        io.yes = None
+        session = MagicMock()
+        session.prompt.side_effect = PermissionError("socketpair denied")
+        io.prompt_session = session
+
+        result = io.prompt_ask("Name?", default="fallback")
+
+        self.assertEqual(result, "typed answer")
+        session.prompt.assert_called_once()
+        mock_input.assert_called_once()
+        self.assertIsNone(io.prompt_session)
+
 
 class TestInputOutputMultilineMode(unittest.TestCase):
     def setUp(self):
