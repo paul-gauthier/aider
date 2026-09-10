@@ -885,6 +885,16 @@ class InputOutput:
                     # Treat EOF (Ctrl+D) as if the user pressed Enter
                     res = default
                     break
+                except (PermissionError, OSError) as err:
+                    # prompt_toolkit may fail creating an asyncio self-pipe
+                    # (e.g. WinError 10013). Fall back to plain input.
+                    self.tool_warning(f"Falling back to plain input: {err}")
+                    self.prompt_session = None
+                    try:
+                        res = input(question)
+                    except EOFError:
+                        res = default
+                        break
 
                 if not res:
                     res = default
@@ -955,6 +965,14 @@ class InputOutput:
             except EOFError:
                 # Treat EOF (Ctrl+D) as if the user pressed Enter
                 res = default
+            except (PermissionError, OSError) as err:
+                # Same Windows/socketpair failure path as confirm_ask.
+                self.tool_warning(f"Falling back to plain input: {err}")
+                self.prompt_session = None
+                try:
+                    res = input(question + " ")
+                except EOFError:
+                    res = default
 
         hist = f"{question.strip()} {res.strip()}"
         self.append_chat_history(hist, linebreak=True, blockquote=True)
