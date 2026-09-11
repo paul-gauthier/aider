@@ -976,14 +976,25 @@ class InputOutput:
             message = Text(message)
         color = ensure_hash_prefix(color) if color else None
         style = dict(style=color) if self.pretty and color else dict()
+        self._safe_console_print(message, **style)
+
+    def _safe_console_print(self, *messages, **style):
+        """Print a rich renderable without crashing on legacy Windows consoles."""
         try:
-            self.console.print(message, **style)
+            self.console.print(*messages, **style)
         except UnicodeEncodeError:
-            # Fallback to ASCII-safe output
-            if isinstance(message, Text):
-                message = message.plain
-            message = str(message).encode("ascii", errors="replace").decode("ascii")
-            self.console.print(message, **style)
+            # Rich renderables can contain characters that cp1252 cannot encode.
+            # Preserve the output flow with a visibly degraded ASCII fallback.
+            safe_messages = []
+            for message in messages:
+                if isinstance(message, Text):
+                    message = message.plain
+                elif isinstance(message, Markdown):
+                    message = message.markup
+                safe_messages.append(
+                    str(message).encode("ascii", errors="replace").decode("ascii")
+                )
+            self.console.print(*safe_messages, **style)
 
     def tool_error(self, message="", strip=True):
         self.num_error_outputs += 1
@@ -1009,7 +1020,7 @@ class InputOutput:
             style["reverse"] = bold
 
         style = RichStyle(**style)
-        self.console.print(*messages, style=style)
+        self._safe_console_print(*messages, style=style)
 
     def get_assistant_mdstream(self):
         mdargs = dict(
@@ -1038,7 +1049,7 @@ class InputOutput:
         else:
             show_resp = Text(message or "(empty response)")
 
-        self.console.print(show_resp)
+        self._safe_console_print(show_resp)
 
     def set_placeholder(self, placeholder):
         """Set a one-time placeholder text for the next input prompt."""

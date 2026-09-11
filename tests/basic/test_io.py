@@ -383,6 +383,18 @@ class TestInputOutputMultilineMode(unittest.TestCase):
             # The invalid Unicode should be replaced with '?'
             self.assertEqual(converted_message, "Hello ?World")
 
+    def test_assistant_output_unicode_fallback(self):
+        io = InputOutput(pretty=False, fancy_input=False)
+
+        with patch.object(io.console, "print") as mock_print:
+            mock_print.side_effect = [UnicodeEncodeError("cp1252", "", 0, 1, "invalid"), None]
+
+            io.assistant_output("Hello ►World", pretty=False)
+
+            self.assertEqual(mock_print.call_count, 2)
+            converted_message = mock_print.call_args.args[0]
+            self.assertEqual(converted_message, "Hello ?World")
+
     def test_multiline_mode_restored_after_interrupt(self):
         """Test that multiline mode is restored after KeyboardInterrupt"""
         io = InputOutput(fancy_input=True)
