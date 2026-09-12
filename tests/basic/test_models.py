@@ -595,6 +595,28 @@ class TestModels(unittest.TestCase):
                 self.assertEqual(model.editor_model.name, editor_name)
                 self.assertIn("reasoning_effort", model.accepts_settings)
 
+    def test_fuzzy_match_models_skips_non_dict_attrs(self):
+        """litellm.model_cost can yield list values; do not AttributeError on .get."""
+        from aider.models import fuzzy_match_models, litellm, model_info_manager
+
+        fake_cost = {
+            "ok/chat-model": {"mode": "chat", "litellm_provider": "ok"},
+            "broken/list-entry": ["not", "a", "dict"],
+        }
+        mock_module = MagicMock()
+        mock_module.model_cost = fake_cost
+        original_lazy = litellm._lazy_module
+        original_local = model_info_manager.local_model_metadata
+        try:
+            litellm._lazy_module = mock_module
+            model_info_manager.local_model_metadata = {}
+            matches = fuzzy_match_models("chat-model")
+        finally:
+            litellm._lazy_module = original_lazy
+            model_info_manager.local_model_metadata = original_local
+
+        self.assertIn("ok/chat-model", matches)
+
 
 if __name__ == "__main__":
     unittest.main()
