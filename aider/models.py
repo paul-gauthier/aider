@@ -1232,6 +1232,9 @@ def fuzzy_match_models(name):
     model_metadata += list(model_info_manager.local_model_metadata.items())
 
     for orig_model, attrs in model_metadata:
+        # litellm.model_cost occasionally yields non-dict values; skip them.
+        if not isinstance(attrs, dict):
+            continue
         model = orig_model.lower()
         if attrs.get("mode") != "chat":
             continue
