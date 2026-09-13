@@ -267,6 +267,59 @@ class TestCoder(unittest.TestCase):
             # Assert that file1.txt is in ignore_mentions
             self.assertIn("file1.txt", coder.ignore_mentions)
 
+    def test_apply_updates_before_file_mention_reflect(self):
+        """Valid edits must apply even when the reply also mentions another file (#5706)."""
+        with GitTemporaryDirectory():
+            io = InputOutput(pretty=False, yes=True)
+            coder = Coder.create(self.GPT35, None, io, fnames=[])
+            coder.auto_lint = False
+            coder.auto_test = False
+            coder.check_tokens = MagicMock(return_value=True)
+            coder.warm_cache = MagicMock()
+            coder.show_usage_report = MagicMock()
+            coder.add_assistant_reply_to_cur_messages = MagicMock()
+            coder.show_pretty = MagicMock(return_value=False)
+            coder.reply_completed = MagicMock(return_value=False)
+            coder.auto_commit = MagicMock(return_value=None)
+            coder.move_back_cur_messages = MagicMock()
+            coder.run_shell_commands = MagicMock(return_value=None)
+            coder.format_messages = MagicMock(
+                return_value=MagicMock(
+                    all_messages=MagicMock(return_value=[dict(role="user", content="edit")])
+                )
+            )
+
+            order = []
+
+            def fake_send(*args, **kwargs):
+                coder.partial_response_content = "edited target.txt and also saw other.txt"
+                coder.partial_response_function_call = dict()
+                if False:
+                    yield None
+
+            def tracking_apply():
+                order.append("apply")
+                return {"target.txt"}
+
+            def tracking_mentions(content):
+                order.append("mention")
+                return "Added other.txt to the chat"
+
+            coder.send = fake_send
+            coder.apply_updates = tracking_apply
+            coder.check_for_file_mentions = tracking_mentions
+            coder.partial_response_function_call = dict()
+            coder.partial_response_content = ""
+            coder.multi_response_content = ""
+            coder.aider_edited_files = set()
+            coder.reflected_message = None
+
+            list(coder.send_message("please edit target.txt"))
+
+            self.assertEqual(order, ["apply", "mention"])
+            self.assertEqual(coder.reflected_message, "Added other.txt to the chat")
+            self.assertIn("target.txt", coder.aider_edited_files)
+
     def test_check_for_subdir_mention(self):
         with GitTemporaryDirectory():
             io = InputOutput(pretty=False, yes=True)

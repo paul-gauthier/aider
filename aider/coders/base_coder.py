@@ -1558,14 +1558,6 @@ class Coder:
             content = ""
 
         if not interrupted:
-            add_rel_files_message = self.check_for_file_mentions(content)
-            if add_rel_files_message:
-                if self.reflected_message:
-                    self.reflected_message += "\n\n" + add_rel_files_message
-                else:
-                    self.reflected_message = add_rel_files_message
-                return
-
             try:
                 if self.reply_completed():
                     return
@@ -1582,6 +1574,8 @@ class Coder:
             ]
             return
 
+        # Apply edits before reflecting on incidental file mentions so a valid
+        # whole-file rewrite is not discarded when it also names other paths (#5706).
         edited = self.apply_updates()
 
         if edited:
@@ -1594,6 +1588,14 @@ class Coder:
             self.move_back_cur_messages(saved_message)
 
         if self.reflected_message:
+            return
+
+        add_rel_files_message = self.check_for_file_mentions(content)
+        if add_rel_files_message:
+            if self.reflected_message:
+                self.reflected_message += "\n\n" + add_rel_files_message
+            else:
+                self.reflected_message = add_rel_files_message
             return
 
         if edited and self.auto_lint:
