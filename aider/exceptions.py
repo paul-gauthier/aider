@@ -73,7 +73,14 @@ class LiteLLMExceptions:
             # with `Error`.
             if var.endswith("Error") and issubclass(getattr(litellm, var), BaseException):
                 if var not in self.exception_info:
-                    raise ValueError(f"{var} is in litellm but not in aider's exceptions list")
+                    if strict:
+                        raise ValueError(f"{var} is in litellm but not in aider's exceptions list")
+                    # Be lenient at runtime: a newer litellm may define exception
+                    # types that aider doesn't map yet. Catch them anyway so they
+                    # are reported cleanly instead of crashing startup (see #5714).
+                    # The strict test run still fails fast, so missing mappings
+                    # get added with proper retry/description info.
+                    self.exceptions[getattr(litellm, var)] = ExInfo(None, None, None)
 
         for var in self.exception_info:
             ex = getattr(litellm, var)
