@@ -102,3 +102,43 @@ def test_openrouter_error():
     assert "OpenRouter" in ex_info.description
     assert "overloaded" in ex_info.description
     assert "rate" in ex_info.description
+
+
+def test_unknown_litellm_error_is_lenient_by_default():
+    """Unknown litellm exceptions must not crash startup (see #5714)"""
+    import litellm
+
+    from aider.exceptions import ExInfo
+
+    class SomeBrandNewError(Exception):
+        pass
+
+    litellm.SomeBrandNewError = SomeBrandNewError
+    try:
+        ex = LiteLLMExceptions()
+        assert SomeBrandNewError in ex.exceptions_tuple()
+        ex_info = ex.get_ex_info(SomeBrandNewError("boom"))
+        assert isinstance(ex_info, ExInfo)
+        assert ex_info.retry is not True
+    finally:
+        del litellm.SomeBrandNewError
+        LiteLLMExceptions.exceptions.pop(SomeBrandNewError, None)
+
+
+def test_unknown_litellm_error_raises_when_strict():
+    """Strict mode still fails fast so missing mappings get added"""
+    import litellm
+
+    import pytest
+
+    class SomeBrandNewError(Exception):
+        pass
+
+    litellm.SomeBrandNewError = SomeBrandNewError
+    try:
+        ex = LiteLLMExceptions()
+        with pytest.raises(ValueError, match="SomeBrandNewError"):
+            ex._load(strict=True)
+    finally:
+        del litellm.SomeBrandNewError
+        LiteLLMExceptions.exceptions.pop(SomeBrandNewError, None)
